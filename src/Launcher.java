@@ -98,7 +98,7 @@ public class Launcher {
                 }
             }
             else {
-                System.out.println("Unkown command");
+                System.out.println("Unknown command");
             }
             input = sc.nextLine();
         }
