@@ -1,37 +1,31 @@
 
-import java.io.IOException;
 import java.util.*;
 
-
 public class Launcher {
-
-    public static void main(String[] args) throws IOException {
-        System.out.println("Welcome\n");
-        Scanner console = new Scanner(System.in);
-        List<Command> command = new ArrayList<Command>();
-        command.add(new Fibo());
-        command.add(new Freq());
-        command.add(new Quit());
-        command.add(new Predict());
-
-        Boolean find = false;
-        Boolean again = true;
-        while (again)
-        {
-            System.out.println("Enter a command:");
-            find = false;
-            String name = console.nextLine();
-            for (Command com: command ){
-                if (name.equals(com.name())){
-                    again = com.run(console);
-                    find = true;
-                }
-            }
-            if (!find) {
+    public static void main(String[] args) {
+        boolean want_continue = true;
+        Scanner scanner = new Scanner(System.in);
+        List<Command> commands = List.of(
+                new Quit(),
+                new Fibo(),
+                new Freq(),
+                new Predict()
+        );
+        do {
+            System.out.println("Enter your command:");
+            String com = scanner.nextLine();
+            Command selectedCommand = commands
+                    .stream()
+                    .filter((c -> c.name().equals(com)))
+                    .findFirst()
+                    .orElse(null);
+            if (selectedCommand == null)
+            {
                 System.out.println("Unknown command");
-            }
-            //console.close();
-        }
 
+            }
+            else
+                want_continue = selectedCommand.run(scanner);
+        } while (want_continue);
     }
 }

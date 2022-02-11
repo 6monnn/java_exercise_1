@@ -1,88 +1,87 @@
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class Predict implements Command{
-
-    public static Map<String, String> predict(String str) {
-        str = str.replaceAll("[^A-Za-z0-9]+", " ").toLowerCase(Locale.ROOT);
-        List<String> arr = Arrays.asList(str.split(" "));
-
-        List<String> uniq = arr.stream().distinct().collect(Collectors.toList());
-
-        Map<String, String> freqWord = new Hashtable<>();
-
-        for (int index = 0; index < uniq.size(); index++) {
-
-            // List de tous les suivants
-            List<String> list = new ArrayList<>();
-            for (int w = 0; w < arr.size() - 1; w++) {
-                if (arr.get(w).equals(uniq.get(index))) {
-                    list.add(arr.get(w + 1));
-                }
-            }
-
-            List<String> li = list.stream().distinct().collect(Collectors.toList());
-            var freqMap = list.stream()
-                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-            long max = 0;
-            String st = "";
-            for (String s: li) {
-                if (max < freqMap.get(s)){
-                    st = s;
-                    max= freqMap.get(s);
-                }
-            }
-
-            //System.out.printf(freqMap.toString());
-            //var max = freqMap.entrySet().stream().max((entry1, entry2) -> entry1.getValue() > entry2.getValue() ? 1 : -1).map(Map.Entry<String, Long>::getKey).orElse(null);
-            freqWord.put(uniq.get(index), st);
-        }
-
-        return freqWord;
-    }
-
-    public static void interactUser(Scanner console, Map<String, String> freq){
-        System.out.printf("Enter a word: ");
-        String word = console.nextLine().toLowerCase();
-        System.out.printf(word + " ");
-        if (freq.containsKey(word)){
-            for (int i = 0; i < 19; i++){
-                System.out.printf(freq.get(word) + " ");
-                word = freq.get(word).toString();
-            }
-            System.out.printf("\n");
-        }
-        else {
-            System.out.printf("Word does not exist");
-        }
-    }
-
+public class Predict implements Command {
     @Override
     public String name() {
         return "predict";
     }
 
     @Override
-    public boolean run(Scanner console) {
-        System.out.printf("Enter a path: ");
-        String path = console.nextLine();
-        Path filepath = Paths.get(path);
-
-        try {
-            String content = Files.readString(filepath);
-            Map<String, String> freq = predict(content);
-            interactUser(console, freq);
-        }
-        catch (IOException e) {
-            System.out.printf("Unreadable file: ");
-            e.printStackTrace();
-        }
+    public boolean run(Scanner scanner) {
+        System.out.println("Enter a path");
+        String path = scanner.nextLine();
+        Predict.predict_text(path, scanner);
         return true;
+    }
+
+    private static void predict_text(String path, Scanner scanner) {
+        String data;
+        try {
+            data = new String(Files.readAllBytes(Paths.get(path)));
+
+            data = data.toLowerCase();
+            data = data.replaceAll("[^a-zA-Z0-9] ", "");
+            String[] words = data.split(" ");
+
+            for (int i = 0; i < words.length; i++) {
+                if (words[i].isBlank()) {//shifting elements
+                    System.arraycopy(words, i + 1, words, i, words.length - 1 - i);
+                }
+            }
+
+            Stream<String> stream_word = Arrays.stream(words);
+            System.out.println("which word you are going to type ? :");
+            String word = scanner.nextLine();
+            word = word.toLowerCase();
+            String finalWord = word;
+            if (stream_word.noneMatch(s -> s.contains(finalWord))) {
+                System.out.println("Word doesn't exist !!");
+                return;
+            }
+            List<String> second_words = new ArrayList<>();
+            second_words.add(word);
+            String second;
+            for (int i = 0; i < 20; i++) {
+                second = get_second_word(words, word);
+                second_words.add(second);
+                word = second;
+            }
+            StringJoiner joiner = new StringJoiner(" ");
+            for (String ele : second_words) {
+                joiner.add(ele);
+            }
+            String result = joiner.toString();
+
+            System.out.println(result);
+        } catch (IOException x) {
+            System.err.format("Unreadable file: %s%n", x);
+        }
+    }
+
+
+    public static String get_second_word(String[] words, String word) {
+        List<String> second_word = new ArrayList<>();
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].equals(word)) {
+                if (i + 1 != words.length)
+                    second_word.add(words[i + 1]);
+            }
+        }
+        Map<String, Long> grouped = second_word.stream()
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()
+                ));
+        LinkedHashMap<String, Long> sorted_grouped_words = new LinkedHashMap<>();
+
+        grouped.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEachOrdered(x -> sorted_grouped_words.put(x.getKey(), x.getValue()));
+        List<String> most_used_words = new ArrayList<>(sorted_grouped_words.keySet());
+
+        return most_used_words.get(0);
     }
 }

@@ -1,79 +1,54 @@
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class Freq implements Command{
+public class Freq implements Command {
     @Override
     public String name() {
         return "freq";
     }
 
     @Override
-    public boolean run(Scanner console) {
-        System.out.printf("Enter a path\n");
-        String path = console.nextLine();
-        Path filepath = Paths.get(path);
-
-        try {
-            String content = Files.readString(filepath);
-            freq(content);
-        }
-        catch (IOException e) {
-            System.out.printf("Unreadable file: \n");
-            e.printStackTrace();
-        }
+    public boolean run(Scanner scanner) {
+        System.out.println("Enter a path");
+        String path = scanner.nextLine();
+        Freq.three_letters_most_freq(path);
         return true;
     }
-    static void bubbleSort(int arr[], String tab[])
-    {
-        int n = arr.length;
-        for (int i = 0; i < n-1; i++)
-            for (int j = 0; j < n-i-1; j++)
-                if (arr[j] < arr[j+1])
-                {
-                    // swap arr[j+1] and arr[j]
-                    String tmp = tab[j];
-                    int temp = arr[j];
-                    tab[j] = tab[j+1];
-                    tab[j+1] = tmp;
-                    arr[j] = arr[j+1];
-                    arr[j+1] = temp;
-                }
-    }
-    static int[] frequencies(String[] arr)
-    {
-        int fr[] = new int [arr.length];
-        int visited = -1;
-        for(int i = 0; i < arr.length; i++)
-        {
-            int count = 1;
-            for(int j = i+1; j < arr.length; j++)
-            {
-                if(arr[i].equals(arr[j]))
-                {
-                    count++;
-                    fr[j] = visited;
-                }
-            }
-            if(fr[i] != visited)
-                fr[i] = count;
-        }
-        return fr;
-    }
-    public static void freq(String str){
-        String[] words = str.replaceAll("[^a-zA-Z ]", "").toLowerCase().split("\\s+");
-        int[] array = frequencies(words);
 
-        bubbleSort(array, words);
-        if (words.length > 0){
-            System.out.printf("%s", words[0]);
+    public static void three_letters_most_freq(String path) {
+        String data = "";
+        try {
+            data = new String(Files.readAllBytes(Paths.get(path)));
+        } catch (IOException x) {
+            System.err.format("Unreadable file: %s%n", x);
         }
-        for (int i = 1; i < 3 ; i++)
-        {
-            System.out.printf(" %s", words[i]);
+        data = data.toLowerCase();
+        data = data.replaceAll("[^a-zA-Z0-9] ", "");
+        String[] words = data.split(" ");
+
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].isBlank()) {//shifting elements
+                System.arraycopy(words, i + 1, words, i, words.length - 1 - i);
+            }
         }
-        System.out.println("");
+        Stream<String> stream_word = Arrays.stream(words);
+        Map<String, Long> grouped = stream_word
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()
+                ));
+        LinkedHashMap<String, Long> sorted_grouped_words = new LinkedHashMap<>();
+
+        grouped.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .forEachOrdered(x -> sorted_grouped_words.put(x.getKey(), x.getValue()));
+        List<String> most_used_words = new ArrayList<>(sorted_grouped_words.keySet());
+        most_used_words = most_used_words.stream().limit(3).toList();
+
+        for (String ele : most_used_words)
+            System.out.print(ele + " ");
+        System.out.println();
     }
 }

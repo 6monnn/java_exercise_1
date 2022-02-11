@@ -2,5 +2,7 @@ import java.util.Scanner;
 
 public interface Command {
     String name();
-    boolean run(Scanner console);
+
+    boolean run(Scanner scanner);
+
 }
